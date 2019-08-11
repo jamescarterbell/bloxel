@@ -66,7 +66,7 @@ impl HalState {
                     .iter()
                     .any(|qf| qf.supports_graphics() && surface.supports_queue_family(qf))
             })
-            .ok_or("Couldn't find a grpahical Adapter!")?;
+            .ok_or("Couldn't find a graphical Adapter!")?;
 
         let (device, queue_group) = {
             let queue_family = adapter
@@ -279,7 +279,7 @@ impl HalState {
             the_command_queue.submit(submission, Some(flight_fence));
             self.swapchain
                 .present(the_command_queue, i_u32, present_wait_semaphores)
-                .map_err(|_| "Failed to present into the swapchain! {}")
+                .map_err(|_| "Failed to present into the swapchain!")
         }
     }
 

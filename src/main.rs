@@ -12,34 +12,45 @@ fn main() {
 
     let mut winit_state = WinitState::default();
     let mut hal_state = HalState::new(&winit_state.window, "New Window").unwrap();
+    let mut local_state = LocalState {
+        frame_width: winit_state.size.width,
+        frame_height: winit_state.size.height,
+        mouse_x: 0.0,
+        mouse_y: 0.0,
+    };
 
     loop {
         let inputs = UserInput::poll_events_loop(&mut winit_state.events_loop);
         if inputs.end_requested {
             break;
         }
+
+        local_state.update_from_input(&inputs);
+
         if let Some((x, y)) = inputs.new_frame_size {
             hal_state.recreate_swapchain();
             continue;
         }
-        if let Err(e) = render(&mut hal_state) {
+
+        if let Err(e) = render(&mut hal_state, &local_state) {
             error!("Rendering Error: {:?}", e);
-            break;
+            continue;
         }
     }
 }
 
-pub fn render(hal: &mut HalState) -> Result<(), &str> {
-    match hal.draw_clear_frame([0.1, 0.5, 0.75, 1.0]) {
-        Ok(_val) => Ok(()),
-        Err(e) => panic!(e),
-    }
+pub fn render(hal: &mut HalState, local: &LocalState) -> Result<(), &'static str> {
+    hal.draw_clear_frame([
+        (local.mouse_x/local.frame_width) as f32,
+        (local.mouse_y/local.frame_height) as f32,
+         0.75, 1.0]).map(|_| ())
 }
 
 #[derive(Debug)]
 pub struct WinitState {
     pub events_loop: EventsLoop,
     pub window: Window,
+    pub size: LogicalSize,
 }
 
 impl WinitState {
@@ -64,6 +75,7 @@ impl WinitState {
         output.map(|window| Self {
             events_loop,
             window,
+            size,
         })
     }
 }
@@ -111,5 +123,25 @@ impl UserInput {
             _ => (),
         });
         output
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct LocalState {
+    pub frame_width: f64,
+    pub frame_height: f64,
+    pub mouse_x: f64,
+    pub mouse_y: f64,
+}
+impl LocalState {
+    pub fn update_from_input(&mut self, input: &UserInput) {
+        if let Some(frame_size) = input.new_frame_size {
+            self.frame_width = frame_size.0;
+            self.frame_height = frame_size.1;
+        }
+        if let Some(position) = input.new_mouse_position {
+            self.mouse_x = position.0;
+            self.mouse_y = position.1;
+        }
     }
 }
