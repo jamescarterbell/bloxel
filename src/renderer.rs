@@ -226,26 +226,16 @@ impl HalState {
         // Advance the frame _before_ we start using the `?` operator
         self.current_frame = (self.current_frame + 1) % self.frames_in_flight;
 
-        let mut image = false;
         let (i_u32, i_usize) = unsafe {
-            let mut result = (0, 0);
-            while !image {
-                let check = self.swapchain.acquire_image(
-                    core::u64::MAX,
+            let check = self
+                .swapchain
+                .acquire_image(
+                    std::u64::MAX,
                     Some(&self.image_available_semaphores[self.current_frame]),
                     None,
-                );
-                match check {
-                    Ok(t) => {
-                        image = true;
-                        result = (t.0, t.0 as usize);
-                    }
-                    Err(_) => {
-                        self.recreate_swapchain();
-                    }
-                };
-            }
-            result
+                )
+                .unwrap();
+            (check.0, check.0 as usize)
         };
 
         let image_available = &self.image_available_semaphores[self.current_frame];
@@ -297,7 +287,7 @@ impl HalState {
         surface: &mut <back::Backend as Backend>::Surface,
         adapter: &Adapter<back::Backend>,
         device: &<back::Backend as Backend>::Device,
-        old_swapchain: Option<<back::Backend as Backend>::Swapchain>
+        old_swapchain: Option<<back::Backend as Backend>::Swapchain>,
     ) -> (
         <back::Backend as Backend>::Swapchain,
         Extent2D,
@@ -314,19 +304,16 @@ impl HalState {
         //
         let present_mode = {
             use gfx_hal::window::PresentMode::*;
-            match [Mailbox, Fifo, Relaxed, Immediate]
+            [Mailbox, Fifo, Relaxed, Immediate]
                 .iter()
                 .cloned()
                 .find(|pm| present_modes.contains(pm))
                 .ok_or("No PresentMode values specified!")
-            {
-                Ok(T) => T,
-                Err(E) => panic!(E),
-            }
+                .unwrap()
         };
         let composite_alpha = {
             use gfx_hal::window::CompositeAlpha;
-            match [
+            [
                 CompositeAlpha::OPAQUE,
                 CompositeAlpha::INHERIT,
                 CompositeAlpha::PREMULTIPLIED,
@@ -336,10 +323,7 @@ impl HalState {
             .cloned()
             .find(|ca| caps.composite_alpha.contains(*ca))
             .ok_or("No CompositeAlpha values specified!")
-            {
-                Ok(T) => T,
-                Err(E) => panic!(E),
-            }
+            .unwrap()
         };
         let format = match preferred_formats {
             None => Format::Rgba8Srgb,
@@ -349,14 +333,11 @@ impl HalState {
                 .cloned()
             {
                 Some(srgb_format) => srgb_format,
-                None => match formats
+                None => formats
                     .get(0)
                     .cloned()
                     .ok_or("Preferred format list was empty!")
-                {
-                    Ok(T) => T,
-                    Err(E) => panic!(E),
-                },
+                    .unwrap(),
             },
         };
         let extent = caps.extents.end;
@@ -369,10 +350,7 @@ impl HalState {
         let image_usage = if caps.usage.contains(Usage::COLOR_ATTACHMENT) {
             Usage::COLOR_ATTACHMENT
         } else {
-            match Err("The Surface isn't capable of supporting color!") {
-                Ok(T) => T,
-                Err(E) => panic!(E),
-            }
+            Err("The Surface isn't capable of supporting color!").unwrap()
         };
         let swapchain_config = SwapchainConfig {
             present_mode,
@@ -409,9 +387,13 @@ impl HalState {
             self.device
                 .destroy_swapchain(ManuallyDrop::into_inner(read(&self.swapchain)));
         }
-        let old_swapchain = unsafe{ManuallyDrop::into_inner(read(&self.swapchain))};
-        let (swapchain, extent, backbuffer, format, frames_in_flight) =
-            Self::create_swapchain(&mut self._surface, &self._adapter, &self.device, Some(old_swapchain));
+        let old_swapchain = unsafe { ManuallyDrop::into_inner(read(&self.swapchain)) };
+        let (swapchain, extent, backbuffer, format, frames_in_flight) = Self::create_swapchain(
+            &mut self._surface,
+            &self._adapter,
+            &self.device,
+            Some(old_swapchain),
+        );
 
         // Recreate and assing swapchain
         self.swapchain = ManuallyDrop::new(swapchain);

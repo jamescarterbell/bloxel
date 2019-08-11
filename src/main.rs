@@ -18,7 +18,10 @@ fn main() {
         if inputs.end_requested {
             break;
         }
-        if let Some((x, y)) = inputs.new_frame_size {}
+        if let Some((x, y)) = inputs.new_frame_size {
+            hal_state.recreate_swapchain();
+            continue;
+        }
         if let Err(e) = render(&mut hal_state) {
             error!("Rendering Error: {:?}", e);
             break;
