@@ -373,7 +373,6 @@ impl HalState {
     }
 
     pub fn recreate_swapchain(&mut self) {
-        use core::ptr::read;
         self.device.wait_idle().unwrap();
         unsafe {
             self.command_pool.reset();
@@ -383,17 +382,17 @@ impl HalState {
             for image_view in self.image_views.drain(..) {
                 self.device.destroy_image_view(image_view);
             }
-            // LAST RESORT STYLE CODE, NOT TO BE IMITATED LIGHTLY
-            self.device
-                .destroy_swapchain(ManuallyDrop::into_inner(read(&self.swapchain)));
         }
-        let old_swapchain = unsafe { ManuallyDrop::into_inner(read(&self.swapchain)) };
-        let (swapchain, extent, backbuffer, format, frames_in_flight) = Self::create_swapchain(
-            &mut self._surface,
-            &self._adapter,
-            &self.device,
-            Some(old_swapchain),
-        );
+        let (swapchain, extent, backbuffer, format, _frames_in_flight) = unsafe {
+            use core::ptr::read;
+            let old_swapchain = ManuallyDrop::into_inner(read(&self.swapchain));
+            Self::create_swapchain(
+                &mut self._surface,
+                &self._adapter,
+                &self.device,
+                Some(old_swapchain),
+            )
+        };
 
         // Recreate and assing swapchain
         self.swapchain = ManuallyDrop::new(swapchain);
