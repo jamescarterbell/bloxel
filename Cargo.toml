@@ -1,0 +1,32 @@
+[package]
+name = "bloxel"
+version = "0.1.0"
+authors = ["jamescarterbell <jamescarterbell@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+vulkan = ["gfx-backend-vulkan"]
+metal = ["gfx-backend-metal"]
+dx12 = ["gfx-backend-dx12"]
+
+[dependencies]
+winit = "0.19.2"
+log = "0.4.0"
+simple_logger = "1.0"
+gfx-hal = "0.2"
+arrayvec = "0.4.11"
+
+[dependencies.gfx-backend-vulkan]
+version = "0.2"
+optional = true
+
+[target.'cfg(target_os = "macos")'.dependencies.gfx-backend-metal]
+version = "0.2"
+optional = true
+
+[target.'cfg(windows)'.dependencies.gfx-backend-dx12]
+version = "0.2"
+optional = true
