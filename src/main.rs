@@ -28,7 +28,7 @@ fn main() {
         local_state.update_from_input(&inputs);
 
         if let Some((x, y)) = inputs.new_frame_size {
-            hal_state.recreate_swapchain();
+            hal_state.recreate_swapchain(&winit_state.window);
             continue;
         }
 
@@ -40,10 +40,16 @@ fn main() {
 }
 
 pub fn render(hal: &mut HalState, local: &LocalState) -> Result<(), &'static str> {
-    hal.draw_clear_frame([
-        (local.mouse_x/local.frame_width) as f32,
-        (local.mouse_y/local.frame_height) as f32,
-         0.75, 1.0]).map(|_| ())
+    hal.draw_triangle_frame(Triangle {
+        points: [
+            [-0.5, 0.5],
+            [-0.5, -0.5],
+            [
+                (local.mouse_x / local.frame_width) as f32,
+                (local.mouse_y / local.frame_height) as f32,
+            ],
+        ],
+    })
 }
 
 #[derive(Debug)]
